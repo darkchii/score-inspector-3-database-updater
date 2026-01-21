@@ -1,5 +1,5 @@
 const { Op } = require("sequelize");
-const { InspectorOsuUser, AltScore, InspectorClanMember, InspectorClanStats, AltUser, AltUserAchievement, AltUserBadge } = require("./db");
+const { InspectorOsuUser, AltScore, AltUser, AltUserAchievement, AltUserBadge } = require("./db");
 const { CalculateXP } = require("./Osu");
 
 module.exports.BatchUpdateUserAltData = BatchUpdateUserAltData;
