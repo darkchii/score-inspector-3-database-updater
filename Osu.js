@@ -1,6 +1,3 @@
-const { Sequelize } = require('sequelize');
-const { AltUser, AltScore, Raw, InspectorCountryStat } = require('./db');
-
 require('dotenv').config();
 const axios = require('axios').default;
 

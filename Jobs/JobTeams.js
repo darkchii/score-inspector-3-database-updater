@@ -1,5 +1,5 @@
-const { Sequelize } = require("sequelize");
-const { InspectorOsuUser, InspectorTeam, InspectorTeamRuleset, InspectorTeamMember, InspectorTeamUser } = require("../db");
+const { Op, literal } = require("@sequelize/core");
+const { InspectorTeam, InspectorTeamRuleset, InspectorTeamMember, InspectorTeamUser } = require("../db");
 const { GetOsuUsers, MODE_SLUGS } = require("../Osu");
 const { DOMParser } = require("@xmldom/xmldom");
 const { Vibrant } = require("node-vibrant/node");
@@ -118,7 +118,7 @@ async function UpdateTeams(dry = false) {
             }, {
                 where: {
                     last_updated: {
-                        [Sequelize.Op.lt]: start_time
+                        [Op.lt]: start_time
                     }
                 }
             });
@@ -226,7 +226,7 @@ async function UpdateTeamMembers(dry = false) {
             const team_members = await InspectorTeamMember.findAll({
                 where: {
                     user_id: {
-                        [Sequelize.Op.notIn]: Sequelize.literal(`(SELECT id as user_id FROM osu_users)`)
+                        [Op.notIn]: literal(`(SELECT id as user_id FROM osu_users)`)
                     }
                 },
                 limit: USER_UPDATE_LIMIT
@@ -350,8 +350,8 @@ async function UpdateTeamsDetailed(dry = false) {
             let teams = await InspectorTeam.findAll({
                 where: {
                     last_scraped: {
-                        [Sequelize.Op.or]: {
-                            [Sequelize.Op.eq]: null,
+                        [Op.or]: {
+                            [Op.eq]: null,
                         }
                     },
                     deleted: false,
@@ -363,7 +363,7 @@ async function UpdateTeamsDetailed(dry = false) {
                 teams = await InspectorTeam.findAll({
                     where: {
                         last_scraped: {
-                            [Sequelize.Op.lt]: new Date(new Date() - 12 * 60 * 60 * 1000),
+                            [Op.lt]: new Date(new Date() - 12 * 60 * 60 * 1000),
                         },
                         deleted: false,
                     },
@@ -763,9 +763,9 @@ if (process.env.NODE_ENV === 'production') {
     UpdateTeamsDetailed();
     UpdateTeamMembers();
 } else {
-    // UpdateTeams();
+    // UpdateTeams(true);
     // Loop(true);
     // UpdateTeamsDetailed(true);
     // UpdateTeamMembers(true);
-    // scrapeTeam(35565, 'https://assets.ppy.sh/teams/flag/5460/76a80469afa36acbcab3f92bea7424ab32cad45baa0ba8189278fd2393f8da98.png');
+    // scrapeTeam(35565, 'https://assets.ppy.sh/teams/flag/5460/76a80469afa36acbcab3f92bea7424ab32cad45baa0ba8189278fd2393f8da98.png', true);
 }
