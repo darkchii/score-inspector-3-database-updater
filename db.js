@@ -2,6 +2,7 @@ const { OsuTeamModel } = require("./Models/OsuTeamModel");
 const { OsuTeamRulesetModel } = require("./Models/OsuTeamRulesetMode");
 const { OsuTeamMemberModel } = require("./Models/OsuTeamMemberModel");
 const { OsuTeamUserModel } = require("./Models/OsuTeamUserModel");
+const { InspectorHistoricalScoreRankModel } = require("./Models/InspectorHistoricalScoreRankModel");
 const { default: Sequelize } = require("@sequelize/core");
 const { MariaDbDialect } = require("@sequelize/mariadb");
 const { PostgresDialect } = require("@sequelize/postgres");
@@ -53,10 +54,10 @@ module.exports.Databases = databases;
 // const InspectorOsuUser = OsuUserModel(databases.inspector);
 // const InspectorUserMilestone = InspectorUserMilestoneModel(databases.inspector);
 // const InspectorScoreStat = InspectorScoreStatModel(databases.inspector);
-// const InspectorHistoricalScoreRankOsu = InspectorHistoricalScoreRankModel(databases.inspector, 'osu');
-// const InspectorHistoricalScoreRankTaiko = InspectorHistoricalScoreRankModel(databases.inspector, 'taiko');
-// const InspectorHistoricalScoreRankMania = InspectorHistoricalScoreRankModel(databases.inspector, 'mania');
-// const InspectorHistoricalScoreRankFruits = InspectorHistoricalScoreRankModel(databases.inspector, 'fruits');
+const InspectorHistoricalScoreRankOsu = InspectorHistoricalScoreRankModel(databases.inspector, 'osu');
+const InspectorHistoricalScoreRankTaiko = InspectorHistoricalScoreRankModel(databases.inspector, 'taiko');
+const InspectorHistoricalScoreRankMania = InspectorHistoricalScoreRankModel(databases.inspector, 'mania');
+const InspectorHistoricalScoreRankFruits = InspectorHistoricalScoreRankModel(databases.inspector, 'fruits');
 // const InspectorCountryStat = InspectorCountryStatModel(databases.inspector);
 
 const InspectorTeam = OsuTeamModel(databases.osu_teams);
@@ -110,23 +111,23 @@ module.exports.InspectorTeamMember = InspectorTeamMember;
 module.exports.InspectorTeamUser = InspectorTeamUser;
 // module.exports.InspectorUserMilestone = InspectorUserMilestone;
 // module.exports.InspectorScoreStat = InspectorScoreStat;
-// module.exports.InspectorHistoricalScoreRankOsu = InspectorHistoricalScoreRankOsu;
-// module.exports.InspectorHistoricalScoreRankTaiko = InspectorHistoricalScoreRankTaiko;
-// module.exports.InspectorHistoricalScoreRankMania = InspectorHistoricalScoreRankMania;
-// module.exports.InspectorHistoricalScoreRankFruits = InspectorHistoricalScoreRankFruits;
+module.exports.InspectorHistoricalScoreRankOsu = InspectorHistoricalScoreRankOsu;
+module.exports.InspectorHistoricalScoreRankTaiko = InspectorHistoricalScoreRankTaiko;
+module.exports.InspectorHistoricalScoreRankMania = InspectorHistoricalScoreRankMania;
+module.exports.InspectorHistoricalScoreRankFruits = InspectorHistoricalScoreRankFruits;
 // module.exports.InspectorCountryStat = InspectorCountryStat;
 
-// module.exports.GetHistoricalScoreRankModel = (mode) => {
-//     switch (mode) {
-//         case 'osu':
-//             return InspectorHistoricalScoreRankOsu;
-//         case 'taiko':
-//             return InspectorHistoricalScoreRankTaiko;
-//         case 'mania':
-//             return InspectorHistoricalScoreRankMania;
-//         case 'fruits':
-//             return InspectorHistoricalScoreRankFruits;
-//         default:
-//             return null;
-//     }
-// }
+module.exports.GetHistoricalScoreRankModel = (mode) => {
+    switch (mode) {
+        case 'osu':
+            return InspectorHistoricalScoreRankOsu;
+        case 'taiko':
+            return InspectorHistoricalScoreRankTaiko;
+        case 'mania':
+            return InspectorHistoricalScoreRankMania;
+        case 'fruits':
+            return InspectorHistoricalScoreRankFruits;
+        default:
+            return null;
+    }
+}

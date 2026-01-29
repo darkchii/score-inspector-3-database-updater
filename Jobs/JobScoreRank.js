@@ -101,10 +101,10 @@ async function UpdateScoreRanks(mode = 'osu') {
     //get current day in DD/MM/YYYY format
     for await (const row of FULL_LIST) {
         //get user from day before
-        const user = DAY_BEFORE_SET?.find(x => x.osu_id === row.user_id);
+        const user = DAY_BEFORE_SET?.find(x => x.user_id === row.user_id);
 
         const obj = {
-            osu_id: row.user_id,
+            user_id: row.user_id,
             username: row.username,
             rank: row.rank,
             old_rank: user ? user.rank : null,
