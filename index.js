@@ -8,7 +8,7 @@ const scoreRankCacher = require("./Jobs/JobScoreRank.js");
 // const populationStatsCacher = require("./Jobs/JobPopulation.js");
 // const systemStatsCacher = require("./Jobs/JobSystemStats.js");
 // const monthlyRankingsCacher = require("./Jobs/JobMonthlyRanking.js");
-const teamsCacher = require("./Jobs/JobTeams.js"); //included so it runs the code in there
+// const teamsCacher = require("./Jobs/JobTeams.js"); //included so it runs the code in there
 require('dotenv').config();
 
 function StartCacher() {
@@ -80,11 +80,6 @@ async function Loop() {
 if (process.env.NODE_ENV === 'production') {
     QueueProcessor();
     Loop();
-    ProcessStars();
 } else {
     console.log('Not in production mode, not starting cacher');
-    //test
-    // ProcessStars();
-    // ConstantLoop()
 }
-// ProcessMissingLazerMods();
