@@ -1,5 +1,5 @@
 const { default: axios } = require("axios");
-const { InspectorHistoricalScoreRank, GetHistoricalScoreRankModel } = require("../db");
+const { GetHistoricalScoreRankModel } = require("../db");
 const { sleep } = require("../Helper");
 const moment = require("moment");
 const axiosRetry = require('axios-retry').default;

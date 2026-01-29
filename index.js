@@ -3,7 +3,7 @@
 const schedule = require('node-schedule');
 // const usersCacher = require("./Jobs/JobUsers.js");
 // const performanceDistributionCacher = require("./Jobs/JobPerformanceDistribution.js");
-// const scoreStatCacher = require("./Jobs/JobScoreStatistics.js");
+const statsCacher = require("./Jobs/JobStats.js");
 const scoreRankCacher = require("./Jobs/JobScoreRank.js");
 // const populationStatsCacher = require("./Jobs/JobPopulation.js");
 // const systemStatsCacher = require("./Jobs/JobSystemStats.js");
@@ -22,15 +22,12 @@ const Cachers = [
     // { cacher: monthlyRankingsCacher, interval: '0 */4 * * *', data: [], parallel: true }, //every 4 hours
     // { cacher: usersCacher, interval: '0 */1 * * *', data: [], onStart: true }, //every 1 hour
     // { cacher: performanceDistributionCacher, interval: '0 */4 * * *', data: [] }, //every 4 hours
-    // { cacher: scoreStatCacher, interval: '0 * * * *', data: ['24h', '7d', 'all'] },
-    // { cacher: scoreStatCacher, interval: '*/30 * * * *', data: ['30min'] },
     // { cacher: activityCacher, interval: '*/15 * * * *', data: [] }, //every 15 minutes
+    // { cacher: statsCacher, interval: '*/10 * * * *', data: ['30min'] }, //every 10 minutes
     { cacher: scoreRankCacher, interval: '1 0 * * *', data: 'osu' },
     { cacher: scoreRankCacher, interval: '1 0 * * *', data: 'taiko' },
     { cacher: scoreRankCacher, interval: '1 0 * * *', data: 'fruits' },
     { cacher: scoreRankCacher, interval: '1 0 * * *', data: 'mania' },
-    // { cacher: populationStatsCacher, interval: '0 */4 * * *', data: [] }, //every 4 hours
-    // { cacher: systemStatsCacher, interval: '*/30 * * * *', data: [], timeout: 20 }, //needs timeout, for some reason it keeps running forever on very rare occasions
 ]
 
 const jobQueue = [];

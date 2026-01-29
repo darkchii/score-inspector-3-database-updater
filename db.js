@@ -6,6 +6,10 @@ const { InspectorHistoricalScoreRankModel } = require("./Models/InspectorHistori
 const { default: Sequelize } = require("@sequelize/core");
 const { MariaDbDialect } = require("@sequelize/mariadb");
 const { PostgresDialect } = require("@sequelize/postgres");
+const AltBeatmapLiveModel = require("./Models/AltBeatmapLiveModel");
+const { InspectorStatModel } = require("./Models/InspectorStatModel");
+const AltScoreLiveModel = require("./Models/AltScoreLiveModel");
+const AltUserLiveModel = require("./Models/AltUserLiveModel");
 require('dotenv').config();
 
 let databases = {
@@ -43,7 +47,7 @@ let databases = {
             user: process.env.ALT_DB_USER,
             password: process.env.ALT_DB_PASSWORD,
             host: process.env.ALT_DB_HOST,
-            // dialect: 'postgres',
+            port: process.env.ALT_DB_PORT,
             dialect: PostgresDialect,
             logging: false
         })
@@ -60,6 +64,8 @@ const InspectorHistoricalScoreRankMania = InspectorHistoricalScoreRankModel(data
 const InspectorHistoricalScoreRankFruits = InspectorHistoricalScoreRankModel(databases.inspector, 'fruits');
 // const InspectorCountryStat = InspectorCountryStatModel(databases.inspector);
 
+const InspectorStat = InspectorStatModel(databases.inspector);
+
 const InspectorTeam = OsuTeamModel(databases.osu_teams);
 const InspectorTeamRuleset = OsuTeamRulesetModel(databases.osu_teams);
 const InspectorTeamMember = OsuTeamMemberModel(databases.osu_teams);
@@ -74,7 +80,9 @@ InspectorTeamMember.belongsTo(InspectorTeam, { as: 'team', foreignKey: 'team_id'
 // const AltPriorityUser = AltPriorityUserModel(databases.osuAlt);
 // const AltUserAchievement = AltUserAchievementModel(databases.osuAlt);
 // const AltUserBadge = AltUserBadgeModel(databases.osuAlt);
-// const AltBeatmap = AltBeatmapModel(databases.osuAlt);
+const AltBeatmapLive = AltBeatmapLiveModel(databases.osuAlt);
+const AltScoreLive = AltScoreLiveModel(databases.osuAlt);
+const AltUserLive = AltUserLiveModel(databases.osuAlt);
 
 //InspectorOsuUser has team_id, InspectorTeam has id
 // InspectorOsuUser.hasOne(InspectorTeam, { as: 'team', foreignKey: 'id' });
@@ -96,26 +104,18 @@ InspectorTeamMember.belongsTo(InspectorTeam, { as: 'team', foreignKey: 'team_id'
 
 // const InspectorUser = InspectorUserModel(databases.inspector);
 
-// module.exports.InspectorUser = InspectorUser;
-// module.exports.AltScore = AltScore;
-// module.exports.AltScoreMods = AltScoreMods;
-// module.exports.AltUser = AltUser;
-// module.exports.AltPriorityUser = AltPriorityUser;
-// module.exports.AltUserAchievement = AltUserAchievement;
-// module.exports.AltUserBadge = AltUserBadge;
-// module.exports.AltBeatmap = AltBeatmap;
-// module.exports.InspectorOsuUser = InspectorOsuUser;
+module.exports.AltBeatmapLive = AltBeatmapLive;
+module.exports.AltScoreLive = AltScoreLive;
+module.exports.AltUserLive = AltUserLive;
 module.exports.InspectorTeam = InspectorTeam;
 module.exports.InspectorTeamRuleset = InspectorTeamRuleset;
 module.exports.InspectorTeamMember = InspectorTeamMember;
 module.exports.InspectorTeamUser = InspectorTeamUser;
-// module.exports.InspectorUserMilestone = InspectorUserMilestone;
-// module.exports.InspectorScoreStat = InspectorScoreStat;
 module.exports.InspectorHistoricalScoreRankOsu = InspectorHistoricalScoreRankOsu;
 module.exports.InspectorHistoricalScoreRankTaiko = InspectorHistoricalScoreRankTaiko;
 module.exports.InspectorHistoricalScoreRankMania = InspectorHistoricalScoreRankMania;
 module.exports.InspectorHistoricalScoreRankFruits = InspectorHistoricalScoreRankFruits;
-// module.exports.InspectorCountryStat = InspectorCountryStat;
+module.exports.InspectorStat = InspectorStat;
 
 module.exports.GetHistoricalScoreRankModel = (mode) => {
     switch (mode) {
