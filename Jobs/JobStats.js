@@ -162,44 +162,44 @@ async function CountTeams() {
 
 async function ProcessTodayTopPlayers() {
     try {
-        //for every ruleset_id, get top 10 users by amount of clears today (highest_pp = true, created today, and include the count of total scores for those users)
-        //use UTC today, not local today
-        const startOfToday = new Date();
-        startOfToday.setUTCHours(0, 0, 0, 0);
-        const endOfToday = new Date();
-        endOfToday.setUTCHours(23, 59, 59, 999);
+        const today = new Date();
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
 
         const leaderboards = {
-            0: {},
-            1: {},
-            2: {},
-            3: {}
+            today: {},
+            yesterday: {}
         };
 
         for (let ruleset_id = 0; ruleset_id <= 3; ruleset_id++) {
-            if (!leaderboards[ruleset_id].clears) {
-                leaderboards[ruleset_id].clears = [];
-            }
+            if(!leaderboards.today[ruleset_id]) { leaderboards.today[ruleset_id] = {}; }
+            if(!leaderboards.yesterday[ruleset_id]) { leaderboards.yesterday[ruleset_id] = {}; }
 
-            if (!leaderboards[ruleset_id].ss_clears) {
-                leaderboards[ruleset_id].ss_clears = [];
-            }
+            if (!leaderboards.today[ruleset_id].clears) { leaderboards.today[ruleset_id].clears = []; }
+            if (!leaderboards.today[ruleset_id].ss_clears) { leaderboards.today[ruleset_id].ss_clears = []; }
+            if (!leaderboards.today[ruleset_id].score) { leaderboards.today[ruleset_id].score = []; }
 
-            if (!leaderboards[ruleset_id].score) {
-                leaderboards[ruleset_id].score = [];
-            }
+            if (!leaderboards.yesterday[ruleset_id].clears) { leaderboards.yesterday[ruleset_id].clears = []; }
+            if (!leaderboards.yesterday[ruleset_id].ss_clears) { leaderboards.yesterday[ruleset_id].ss_clears = []; }
+            if (!leaderboards.yesterday[ruleset_id].score) { leaderboards.yesterday[ruleset_id].score = []; }
 
-            const data_clears = await queryDayLeaderboard(ruleset_id, new Date(), 'count(*)');
-            const data_ss_clears = await queryDayLeaderboard(ruleset_id, new Date(), 'sum(case when grade = \'XH\' or grade = \'X\' then 1 else 0 end)', ['pp'], ['grade']);
-            const data_score = await queryDayLeaderboard(ruleset_id, new Date(), 'sum(case when legacy_total_score > 0 then legacy_total_score else classic_total_score end)', ['legacy_total_score', 'classic_total_score'], ['legacy_total_score', 'classic_total_score']);
+            const data_clears = await queryDayLeaderboard(ruleset_id, today, 'count(*)');
+            const data_ss_clears = await queryDayLeaderboard(ruleset_id, today, 'sum(case when grade = \'XH\' or grade = \'X\' then 1 else 0 end)', ['pp'], ['grade']);
+            const data_score = await queryDayLeaderboard(ruleset_id, today, 'sum(case when legacy_total_score > 0 then legacy_total_score else classic_total_score end)', ['legacy_total_score', 'classic_total_score'], ['legacy_total_score', 'classic_total_score']);
 
-            leaderboards[ruleset_id].clears = data_clears;
-            leaderboards[ruleset_id].ss_clears = data_ss_clears;
-            leaderboards[ruleset_id].score = data_score;
+            const data_clears_yesterday = await queryDayLeaderboard(ruleset_id, yesterday, 'count(*)');
+            const data_ss_clears_yesterday = await queryDayLeaderboard(ruleset_id, yesterday, 'sum(case when grade = \'XH\' or grade = \'X\' then 1 else 0 end)', ['pp'], ['grade']);
+            const data_score_yesterday = await queryDayLeaderboard(ruleset_id, yesterday, 'sum(case when legacy_total_score > 0 then legacy_total_score else classic_total_score end)', ['legacy_total_score', 'classic_total_score'], ['legacy_total_score', 'classic_total_score']);
+
+            leaderboards.today[ruleset_id].clears = data_clears;
+            leaderboards.today[ruleset_id].ss_clears = data_ss_clears;
+            leaderboards.today[ruleset_id].score = data_score;
+
+            leaderboards.yesterday[ruleset_id].clears = data_clears_yesterday;
+            leaderboards.yesterday[ruleset_id].ss_clears = data_ss_clears_yesterday;
+            leaderboards.yesterday[ruleset_id].score = data_score_yesterday;
         }
 
-        // console.log(JSON.stringify(leaderboards, null, 2));
-        //create/update InspectorStat 'today_top_players'
         const [stat, created] = await InspectorStat.findOrCreate({
             where: { metric: 'today_top_players' },
             defaults: {
