@@ -49,11 +49,13 @@ async function CountBeatmaps() {
             where: { metric: 'beatmap_counts' },
             defaults: {
                 data: JSON.stringify(counts),
+                last_updated: new Date()
             }
         });
 
         if (!created) {
             stat.data = JSON.stringify(counts);
+            stat.last_updated = new Date();
             await stat.save();
         }
     } catch (e) {
@@ -102,11 +104,13 @@ async function CountScores() {
             where: { metric: 'score_counts' },
             defaults: {
                 data: JSON.stringify(counts),
+                last_updated: new Date()
             }
         });
 
         if (!created) {
             stat.data = JSON.stringify(counts);
+            stat.last_updated = new Date();
             await stat.save();
         }
     } catch (e) {
@@ -123,10 +127,12 @@ async function CountUsers() {
             where: { metric: 'user_counts' },
             defaults: {
                 data: JSON.stringify({ total: count }),
+                last_updated: new Date()
             }
         });
         if (!created) {
             stat.data = JSON.stringify({ total: count });
+            stat.last_updated = new Date();
             await stat.save();
         }
     } catch (e) {
@@ -147,11 +153,13 @@ async function CountTeams() {
             where: { metric: 'team_counts' },
             defaults: {
                 data: JSON.stringify({ total: count }),
+                last_updated: new Date()
             }
         });
 
         if (!created) {
             stat.data = JSON.stringify({ total: count });
+            stat.last_updated = new Date();
             await stat.save();
         }
     } catch (e) {
@@ -204,11 +212,13 @@ async function ProcessTodayTopPlayers() {
             where: { metric: 'today_top_players' },
             defaults: {
                 data: JSON.stringify(leaderboards),
+                last_updated: new Date()
             }
         });
 
         if (!created) {
             stat.data = JSON.stringify(leaderboards);
+            stat.last_updated = new Date();
             await stat.save();
         }
     } catch (e) {
