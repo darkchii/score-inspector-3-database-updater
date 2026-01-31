@@ -180,8 +180,8 @@ async function ProcessTodayTopPlayers() {
         };
 
         for (let ruleset_id = 0; ruleset_id <= 3; ruleset_id++) {
-            if(!leaderboards.today[ruleset_id]) { leaderboards.today[ruleset_id] = {}; }
-            if(!leaderboards.yesterday[ruleset_id]) { leaderboards.yesterday[ruleset_id] = {}; }
+            if (!leaderboards.today[ruleset_id]) { leaderboards.today[ruleset_id] = {}; }
+            if (!leaderboards.yesterday[ruleset_id]) { leaderboards.yesterday[ruleset_id] = {}; }
 
             if (!leaderboards.today[ruleset_id].clears) { leaderboards.today[ruleset_id].clears = []; }
             if (!leaderboards.today[ruleset_id].ss_clears) { leaderboards.today[ruleset_id].ss_clears = []; }
@@ -191,12 +191,12 @@ async function ProcessTodayTopPlayers() {
             if (!leaderboards.yesterday[ruleset_id].ss_clears) { leaderboards.yesterday[ruleset_id].ss_clears = []; }
             if (!leaderboards.yesterday[ruleset_id].score) { leaderboards.yesterday[ruleset_id].score = []; }
 
-            const data_clears = await queryDayLeaderboard(ruleset_id, today, 'count(*)');
-            const data_ss_clears = await queryDayLeaderboard(ruleset_id, today, 'sum(case when grade = \'XH\' or grade = \'X\' then 1 else 0 end)', ['pp'], ['grade']);
+            const data_clears = await queryDayLeaderboard(ruleset_id, today, 'count(*)', ['legacy_total_score', 'classic_total_score']);
+            const data_ss_clears = await queryDayLeaderboard(ruleset_id, today, 'sum(case when grade = \'XH\' or grade = \'X\' then 1 else 0 end)', ['legacy_total_score', 'classic_total_score'], ['grade']);
             const data_score = await queryDayLeaderboard(ruleset_id, today, 'sum(case when legacy_total_score > 0 then legacy_total_score else classic_total_score end)', ['legacy_total_score', 'classic_total_score'], ['legacy_total_score', 'classic_total_score']);
 
-            const data_clears_yesterday = await queryDayLeaderboard(ruleset_id, yesterday, 'count(*)');
-            const data_ss_clears_yesterday = await queryDayLeaderboard(ruleset_id, yesterday, 'sum(case when grade = \'XH\' or grade = \'X\' then 1 else 0 end)', ['pp'], ['grade']);
+            const data_clears_yesterday = await queryDayLeaderboard(ruleset_id, yesterday, 'count(*)', ['legacy_total_score', 'classic_total_score']);
+            const data_ss_clears_yesterday = await queryDayLeaderboard(ruleset_id, yesterday, 'sum(case when grade = \'XH\' or grade = \'X\' then 1 else 0 end)', ['legacy_total_score', 'classic_total_score'], ['grade']);
             const data_score_yesterday = await queryDayLeaderboard(ruleset_id, yesterday, 'sum(case when legacy_total_score > 0 then legacy_total_score else classic_total_score end)', ['legacy_total_score', 'classic_total_score'], ['legacy_total_score', 'classic_total_score']);
 
             leaderboards.today[ruleset_id].clears = data_clears;
@@ -232,33 +232,54 @@ async function queryDayLeaderboard(ruleset_id, date, select_clear, primary_stats
     start.setUTCHours(0, 0, 0, 0);
     const end = new Date(date);
     end.setUTCHours(23, 59, 59, 999);
-    const data_cleared = await Databases.osuAlt.query(
-        `SELECT 
-            user_id_fk, 
-            ${select_clear} as clear
-        FROM (
+    const query = `
+            WITH normalized_scores AS (
             SELECT
                 user_id_fk,
                 beatmap_id_fk,
-                ${included_attributes.length > 0 ? included_attributes.join(', ') + ', ' : ''}
-                ${primary_stats.map(stat => `MAX(CASE WHEN ${stat} IS NOT NULL AND ${stat} > 0 THEN ${stat} ELSE 0 END) AS max_${stat}`).join(', ')}
+                ${included_attributes.map(attr => `${attr}`).join(', ')}${included_attributes.length > 0 ? ',' : ''}
+                ended_at${primary_stats.length > 0 ? `, GREATEST(${primary_stats.map(stat => `NULLIF(${stat}, 0)`).join(', ')}) as primary_stat` : ''}
             FROM scorelive
-            WHERE ruleset_id = :ruleset_id
-            AND ended_at BETWEEN :start AND :end
-            GROUP BY user_id_fk, beatmap_id_fk${included_attributes.length > 0 ? ', ' + included_attributes.join(', ') : ''}
-        ) AS t
+            WHERE ruleset_id = :ruleset_id AND ended_at <= :end
+        ),
+        best_scores AS (
+            SELECT DISTINCT ON (user_id_fk, beatmap_id_fk)
+                user_id_fk,
+                beatmap_id_fk,
+                ended_at,
+                ${included_attributes.map(attr => `${attr}`).join(', ')}${included_attributes.length > 0 ? ',' : ''}
+                primary_stat
+            FROM normalized_scores
+            WHERE primary_stat IS NOT NULL
+            ORDER BY
+                user_id_fk,
+                beatmap_id_fk,
+                primary_stat DESC,
+                ended_at DESC
+        ),
+        today_best_scores AS (
+            SELECT
+                user_id_fk${included_attributes.length > 0 ? `,` : ''}
+                ${included_attributes.map(attr => `${attr}`).join(', ')}
+            FROM best_scores
+            WHERE ended_at BETWEEN :start AND :end
+        )
+        SELECT
+            user_id_fk,
+            ${select_clear} as clear
+        FROM today_best_scores
         GROUP BY user_id_fk
         ORDER BY clear DESC
-        LIMIT ${limit}
-        `
-        , {
-            replacements: {
-                ruleset_id,
-                start,
-                end
-            },
-            type: Sequelize.QueryTypes.SELECT
-        });
+        LIMIT ${limit};
+    `;
+    const data_cleared = await Databases.osuAlt.query(query, {
+        replacements: {
+            ruleset_id,
+            start,
+            end
+        },
+        type: Sequelize.QueryTypes.SELECT,
+    });
 
     const user_ids = data_cleared.map(row => row.user_id_fk);
     //for all the users, also get the total number, so without unique beatmaps
@@ -292,5 +313,6 @@ async function queryDayLeaderboard(ruleset_id, date, select_clear, primary_stats
 
 //if dev
 if (process.env.NODE_ENV === 'development') {
-    UpdateStats();
+    // UpdateStats();
+    ProcessTodayTopPlayers();
 }
