@@ -208,19 +208,19 @@ async function ProcessTodayTopPlayers() {
             leaderboards.yesterday[ruleset_id].score = data_score_yesterday;
         }
 
-        // const [stat, created] = await InspectorStat.findOrCreate({
-        //     where: { metric: 'today_top_players' },
-        //     defaults: {
-        //         data: JSON.stringify(leaderboards),
-        //         last_updated: new Date()
-        //     }
-        // });
+        const [stat, created] = await InspectorStat.findOrCreate({
+            where: { metric: 'today_top_players' },
+            defaults: {
+                data: JSON.stringify(leaderboards),
+                last_updated: new Date()
+            }
+        });
 
-        // if (!created) {
-        //     stat.data = JSON.stringify(leaderboards);
-        //     stat.last_updated = new Date();
-        //     await stat.save();
-        // }
+        if (!created) {
+            stat.data = JSON.stringify(leaderboards);
+            stat.last_updated = new Date();
+            await stat.save();
+        }
     } catch (e) {
         console.log(`[SYSTEM STATS] Failed to process today top players:`);
         console.log(e);
