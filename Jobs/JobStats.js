@@ -208,19 +208,19 @@ async function ProcessTodayTopPlayers() {
             leaderboards.yesterday[ruleset_id].score = data_score_yesterday;
         }
 
-        const [stat, created] = await InspectorStat.findOrCreate({
-            where: { metric: 'today_top_players' },
-            defaults: {
-                data: JSON.stringify(leaderboards),
-                last_updated: new Date()
-            }
-        });
+        // const [stat, created] = await InspectorStat.findOrCreate({
+        //     where: { metric: 'today_top_players' },
+        //     defaults: {
+        //         data: JSON.stringify(leaderboards),
+        //         last_updated: new Date()
+        //     }
+        // });
 
-        if (!created) {
-            stat.data = JSON.stringify(leaderboards);
-            stat.last_updated = new Date();
-            await stat.save();
-        }
+        // if (!created) {
+        //     stat.data = JSON.stringify(leaderboards);
+        //     stat.last_updated = new Date();
+        //     await stat.save();
+        // }
     } catch (e) {
         console.log(`[SYSTEM STATS] Failed to process today top players:`);
         console.log(e);
@@ -283,6 +283,7 @@ async function queryDayLeaderboard(ruleset_id, date, select_clear, primary_stats
 
     const user_ids = data_cleared.map(row => row.user_id_fk);
     //for all the users, also get the total number, so without unique beatmaps
+    if(user_ids.length === 0) { return []; }
     const data_all = await Databases.osuAlt.query( //directly insert user_ids into query (they cant be injected)
         `SELECT 
             user_id_fk,
