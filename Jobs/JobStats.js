@@ -375,10 +375,10 @@ async function CountScoreData() {
         //Years: all years 
         //So for Years, let's say 2011, count all scores IN 2011 only (so start: 2011-01-01 00:00:00, end: 2011-12-31 23:59:59)
         //also count amount of grades (XH, X, SH, S, A, B, C, D, F) and score (legacy_total_score/classic_total_score whichever is higher) per timeframe 
-        let data = {};
         const now = new Date();
 
         for (const ruleset_id of [0, 1, 2, 3]) {
+            let data = {};
             for (const timeframe of scoreDataTimeframes) {
                 //use a single query to get all counts per timeframe
                 let timeCondition = '';
@@ -424,8 +424,7 @@ async function CountScoreData() {
                         ruleset_id
                     }
                 });
-                if(!data[`ruleset_${ruleset_id}`]) { data[`ruleset_${ruleset_id}`] = {}; }
-                data[`ruleset_${ruleset_id}`][timeframe.name] = results.map(row => ({
+                data[timeframe.name] = results.map(row => ({
                     period: row.period,
                     total_scores: parseInt(row.total_scores),
                     grades: {
@@ -441,21 +440,21 @@ async function CountScoreData() {
                     total_score_sum: parseInt(row.total_score_sum)
                 }));
             }
+            //create/update InspectorStat 'score_data_counts'
+            const [stat, created] = await InspectorStat.findOrCreate({
+                where: { metric: `score_data_counts_ruleset_${ruleset_id}` },
+                defaults: {
+                    data: JSON.stringify(data),
+                    last_updated: new Date()
+                }
+            });
+            if (!created) {
+                stat.data = JSON.stringify(data);
+                stat.last_updated = new Date();
+                await stat.save();
+            }
         }
 
-        //create/update InspectorStat 'score_data_counts'
-        const [stat, created] = await InspectorStat.findOrCreate({
-            where: { metric: 'score_data_counts' },
-            defaults: {
-                data: JSON.stringify(data),
-                last_updated: new Date()
-            }
-        });
-        if (!created) {
-            stat.data = JSON.stringify(data);
-            stat.last_updated = new Date();
-            await stat.save();
-        }
     } catch (e) {
         console.log(`[SYSTEM STATS] Failed to count score data:`);
         console.log(e);
