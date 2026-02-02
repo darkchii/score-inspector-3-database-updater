@@ -378,28 +378,29 @@ async function CountScoreData() {
         let data = {};
         const now = new Date();
 
-        for (const timeframe of scoreDataTimeframes) {
-            //use a single query to get all counts per timeframe
-            let timeCondition = '';
-            let timeFormat = '';
-            if (timeframe.name === 'hours') {
-                const pastDate = new Date(now);
-                pastDate.setHours(pastDate.getHours() - timeframe.duration);
-                timeCondition = `WHERE ended_at >= '${pastDate.toISOString().slice(0, 19).replace('T', ' ')}'`;
-                timeFormat = 'YYYY-MM-DD HH24';
-            } else if (timeframe.name === 'days') {
-                const pastDate = new Date(now);
-                pastDate.setDate(pastDate.getDate() - timeframe.duration);
-                timeCondition = `WHERE ended_at >= '${pastDate.toISOString().slice(0, 19).replace('T', ' ')}'`;
-                timeFormat = 'YYYY-MM-DD';
-            } else if (timeframe.name === 'months') {
-                timeCondition = ''; //all months
-                timeFormat = 'YYYY-MM';
-            } else if (timeframe.name === 'years') {
-                timeCondition = ''; //all years
-                timeFormat = 'YYYY';
-            }
-            const query = `
+        for (const ruleset_id of [0, 1, 2, 3]) {
+            for (const timeframe of scoreDataTimeframes) {
+                //use a single query to get all counts per timeframe
+                let timeCondition = '';
+                let timeFormat = '';
+                if (timeframe.name === 'hours') {
+                    const pastDate = new Date(now);
+                    pastDate.setHours(pastDate.getHours() - timeframe.duration);
+                    timeCondition = `AND ended_at >= '${pastDate.toISOString().slice(0, 19).replace('T', ' ')}'`;
+                    timeFormat = 'YYYY-MM-DD HH24';
+                } else if (timeframe.name === 'days') {
+                    const pastDate = new Date(now);
+                    pastDate.setDate(pastDate.getDate() - timeframe.duration);
+                    timeCondition = `AND ended_at >= '${pastDate.toISOString().slice(0, 19).replace('T', ' ')}'`;
+                    timeFormat = 'YYYY-MM-DD';
+                } else if (timeframe.name === 'months') {
+                    timeCondition = ''; //all months
+                    timeFormat = 'YYYY-MM';
+                } else if (timeframe.name === 'years') {
+                    timeCondition = ''; //all years
+                    timeFormat = 'YYYY';
+                }
+                const query = `
                 SELECT 
                     TO_TIMESTAMP(ended_at::text, '${timeFormat}') as period,
                     COUNT(*) as total_scores,
@@ -413,30 +414,34 @@ async function CountScoreData() {
                     SUM(CASE WHEN grade = 'D' THEN 1 ELSE 0 END) as d_count,
                     SUM(CASE WHEN legacy_total_score > classic_total_score THEN legacy_total_score ELSE classic_total_score END) as total_score_sum
                 FROM scorelive
-                ${timeCondition}
+                WHERE ruleset_id = :ruleset_id ${timeCondition}
                 GROUP BY period
                 ORDER BY period DESC;
             `;
-            const results = await Databases.osuAlt.query(query, {
-                type: Sequelize.QueryTypes.SELECT   
-            });
-            data[timeframe.name] = results.map(row => ({
-                period: row.period,
-                total_scores: parseInt(row.total_scores),
-                grades: {
-                    XH: parseInt(row.xh_count),
-                    X: parseInt(row.x_count),
-                    SH: parseInt(row.sh_count),
-                    S: parseInt(row.s_count),
-                    A: parseInt(row.a_count),
-                    B: parseInt(row.b_count),
-                    C: parseInt(row.c_count),
-                    D: parseInt(row.d_count),
-                },
-                total_score_sum: parseInt(row.total_score_sum)
-            }));
+                const results = await Databases.osuAlt.query(query, {
+                    type: Sequelize.QueryTypes.SELECT,
+                    replacements: {
+                        ruleset_id
+                    }
+                });
+                if(!data[`ruleset_${ruleset_id}`]) { data[`ruleset_${ruleset_id}`] = {}; }
+                data[`ruleset_${ruleset_id}`][timeframe.name] = results.map(row => ({
+                    period: row.period,
+                    total_scores: parseInt(row.total_scores),
+                    grades: {
+                        XH: parseInt(row.xh_count),
+                        X: parseInt(row.x_count),
+                        SH: parseInt(row.sh_count),
+                        S: parseInt(row.s_count),
+                        A: parseInt(row.a_count),
+                        B: parseInt(row.b_count),
+                        C: parseInt(row.c_count),
+                        D: parseInt(row.d_count),
+                    },
+                    total_score_sum: parseInt(row.total_score_sum)
+                }));
+            }
         }
-        // console.log(data);
 
         //create/update InspectorStat 'score_data_counts'
         const [stat, created] = await InspectorStat.findOrCreate({
@@ -460,4 +465,5 @@ async function CountScoreData() {
 //if dev
 if (process.env.NODE_ENV === 'development') {
     // UpdateStats();
+    CountScoreData();
 }
