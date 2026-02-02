@@ -22,6 +22,8 @@ async function UpdateCounts() {
     await CountTeams();
 
     await ProcessTodayTopPlayers();
+    await ProcessActiveUsers();
+    await CountScoreData();
 }
 
 async function CountBeatmaps() {
@@ -283,7 +285,7 @@ async function queryDayLeaderboard(ruleset_id, date, select_clear, primary_stats
 
     const user_ids = data_cleared.map(row => row.user_id_fk);
     //for all the users, also get the total number, so without unique beatmaps
-    if(user_ids.length === 0) { return []; }
+    if (user_ids.length === 0) { return []; }
     const data_all = await Databases.osuAlt.query( //directly insert user_ids into query (they cant be injected)
         `SELECT 
             user_id_fk,
@@ -312,8 +314,150 @@ async function queryDayLeaderboard(ruleset_id, date, select_clear, primary_stats
     return _data;
 }
 
+async function ProcessActiveUsers() {
+    //for the last 24 hours, per hour, count unique active users (user_id_fk in scorelive)
+    try {
+        const now = new Date();
+        const active_users = [];
+        for (let i = 0; i < 24; i++) {
+            const end = new Date(now);
+            end.setHours(end.getHours() - i);
+            const start = new Date(end);
+            start.setHours(start.getHours() - 1);
+            const count = await Databases.osuAlt.query(`
+                SELECT COUNT(DISTINCT user_id_fk) as count
+                FROM scorelive
+                WHERE ended_at BETWEEN :start AND :end
+            `, {
+                replacements: {
+                    start,
+                    end
+                },
+                type: Sequelize.QueryTypes.SELECT
+            });
+            active_users.push({
+                hour: end.toISOString().slice(0, 13) + ':00:00Z',
+                count: parseInt(count[0].count)
+            });
+        }
+        //create/update InspectorStat 'active_users'
+        const [stat, created] = await InspectorStat.findOrCreate({
+            where: { metric: 'active_users' },
+            defaults: {
+                data: JSON.stringify(active_users),
+                last_updated: new Date()
+            }
+        });
+        if (!created) {
+            stat.data = JSON.stringify(active_users);
+            stat.last_updated = new Date();
+            await stat.save();
+        }
+    } catch (e) {
+        console.log(`[SYSTEM STATS] Failed to process active users:`);
+        console.log(e);
+    }
+}
+
+const scoreDataTimeframes = [
+    { name: 'hours', duration: 720 }, //last 720 hours
+    { name: 'days', duration: 180 }, //last 180 days
+    { name: 'months', duration: null }, //all months
+    { name: 'years', duration: null } //all years
+];
+
+async function CountScoreData() {
+    try {
+        //count score submissions for the following:
+        //Hours: last 720 hours
+        //Days: last 180 days
+        //Months: all months
+        //Years: all years 
+        //So for Years, let's say 2011, count all scores IN 2011 only (so start: 2011-01-01 00:00:00, end: 2011-12-31 23:59:59)
+        //also count amount of grades (XH, X, SH, S, A, B, C, D, F) and score (legacy_total_score/classic_total_score whichever is higher) per timeframe 
+        let data = {};
+        const now = new Date();
+
+        for (const timeframe of scoreDataTimeframes) {
+            //use a single query to get all counts per timeframe
+            let timeCondition = '';
+            let timeFormat = '';
+            if (timeframe.name === 'hours') {
+                const pastDate = new Date(now);
+                pastDate.setHours(pastDate.getHours() - timeframe.duration);
+                timeCondition = `WHERE ended_at >= '${pastDate.toISOString().slice(0, 19).replace('T', ' ')}'`;
+                timeFormat = 'YYYY-MM-DD HH24';
+            } else if (timeframe.name === 'days') {
+                const pastDate = new Date(now);
+                pastDate.setDate(pastDate.getDate() - timeframe.duration);
+                timeCondition = `WHERE ended_at >= '${pastDate.toISOString().slice(0, 19).replace('T', ' ')}'`;
+                timeFormat = 'YYYY-MM-DD';
+            } else if (timeframe.name === 'months') {
+                timeCondition = ''; //all months
+                timeFormat = 'YYYY-MM';
+            } else if (timeframe.name === 'years') {
+                timeCondition = ''; //all years
+                timeFormat = 'YYYY';
+            }
+            const query = `
+                SELECT 
+                    TO_TIMESTAMP(ended_at::text, '${timeFormat}') as period,
+                    COUNT(*) as total_scores,
+                    SUM(CASE WHEN grade = 'XH' THEN 1 ELSE 0 END) as xh_count,
+                    SUM(CASE WHEN grade = 'X' THEN 1 ELSE 0 END) as x_count,
+                    SUM(CASE WHEN grade = 'SH' THEN 1 ELSE 0 END) as sh_count,
+                    SUM(CASE WHEN grade = 'S' THEN 1 ELSE 0 END) as s_count,
+                    SUM(CASE WHEN grade = 'A' THEN 1 ELSE 0 END) as a_count,
+                    SUM(CASE WHEN grade = 'B' THEN 1 ELSE 0 END) as b_count,
+                    SUM(CASE WHEN grade = 'C' THEN 1 ELSE 0 END) as c_count,
+                    SUM(CASE WHEN grade = 'D' THEN 1 ELSE 0 END) as d_count,
+                    SUM(CASE WHEN legacy_total_score > classic_total_score THEN legacy_total_score ELSE classic_total_score END) as total_score_sum
+                FROM scorelive
+                ${timeCondition}
+                GROUP BY period
+                ORDER BY period DESC;
+            `;
+            const results = await Databases.osuAlt.query(query, {
+                type: Sequelize.QueryTypes.SELECT   
+            });
+            data[timeframe.name] = results.map(row => ({
+                period: row.period,
+                total_scores: parseInt(row.total_scores),
+                grades: {
+                    XH: parseInt(row.xh_count),
+                    X: parseInt(row.x_count),
+                    SH: parseInt(row.sh_count),
+                    S: parseInt(row.s_count),
+                    A: parseInt(row.a_count),
+                    B: parseInt(row.b_count),
+                    C: parseInt(row.c_count),
+                    D: parseInt(row.d_count),
+                },
+                total_score_sum: parseInt(row.total_score_sum)
+            }));
+        }
+        // console.log(data);
+
+        //create/update InspectorStat 'score_data_counts'
+        const [stat, created] = await InspectorStat.findOrCreate({
+            where: { metric: 'score_data_counts' },
+            defaults: {
+                data: JSON.stringify(data),
+                last_updated: new Date()
+            }
+        });
+        if (!created) {
+            stat.data = JSON.stringify(data);
+            stat.last_updated = new Date();
+            await stat.save();
+        }
+    } catch (e) {
+        console.log(`[SYSTEM STATS] Failed to count score data:`);
+        console.log(e);
+    }
+}
+
 //if dev
 if (process.env.NODE_ENV === 'development') {
     // UpdateStats();
-    ProcessTodayTopPlayers();
 }
