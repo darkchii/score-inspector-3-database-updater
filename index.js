@@ -23,7 +23,7 @@ const Cachers = [
     // { cacher: usersCacher, interval: '0 */1 * * *', data: [], onStart: true }, //every 1 hour
     // { cacher: performanceDistributionCacher, interval: '0 */4 * * *', data: [] }, //every 4 hours
     // { cacher: activityCacher, interval: '*/15 * * * *', data: [] }, //every 15 minutes
-    { cacher: statsCacher, interval: '*/10 * * * *', data: ['10min'] }, //every 10 minutes
+    { cacher: statsCacher, interval: '*/15 * * * *', data: ['15min'] }, //every 15 minutes
     { cacher: scoreRankCacher, interval: '1 0 * * *', data: 'osu' },
     { cacher: scoreRankCacher, interval: '1 0 * * *', data: 'taiko' },
     { cacher: scoreRankCacher, interval: '1 0 * * *', data: 'fruits' },
