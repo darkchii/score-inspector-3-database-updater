@@ -174,40 +174,49 @@ async function ProcessTodayTopPlayers() {
     try {
         const today = new Date();
         const yesterday = new Date();
+        const thisYear = new Date();
+        const lastYear = new Date();
+        const lastYearEnd = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
+        thisYear.setMonth(0); thisYear.setDate(1); thisYear.setHours(0, 0, 0, 0);
+        lastYear.setFullYear(lastYear.getFullYear() - 1); lastYear.setMonth(0); lastYear.setDate(1); lastYear.setHours(0, 0, 0, 0);
+        lastYearEnd.setFullYear(lastYearEnd.getFullYear() - 1); lastYearEnd.setMonth(11); lastYearEnd.setDate(31); lastYearEnd.setHours(23, 59, 59, 999);
 
         const leaderboards = {
-            today: {},
-            yesterday: {}
+            today: {
+                start: today
+            },
+            yesterday: {
+                start: yesterday
+            },
+            year: { 
+                start: thisYear, 
+                end: new Date() 
+            },
+            last_year: { 
+                start: lastYear, 
+                end: lastYearEnd 
+            }
         };
 
         for (let ruleset_id = 0; ruleset_id <= 3; ruleset_id++) {
-            if (!leaderboards.today[ruleset_id]) { leaderboards.today[ruleset_id] = {}; }
-            if (!leaderboards.yesterday[ruleset_id]) { leaderboards.yesterday[ruleset_id] = {}; }
+            //do above, but use a for loop so we can just easily add more timeframes if needed
+            //use the keys of 'leaderboards' ofc
+            for (const timeframe of Object.keys(leaderboards)) {
+                const data_clears = await queryDayLeaderboard(ruleset_id, leaderboards[timeframe].start, 'count(*)', ['legacy_total_score', 'classic_total_score'], [], 10, leaderboards[timeframe].end || null);
+                const data_ss_clears = await queryDayLeaderboard(ruleset_id, leaderboards[timeframe].start, 'sum(case when grade = \'XH\' or grade = \'X\' then 1 else 0 end)', ['legacy_total_score', 'classic_total_score'], ['grade'], 10, leaderboards[timeframe].end || null);
+                const data_score = await queryDayLeaderboard(ruleset_id, leaderboards[timeframe].start, 'sum(case when legacy_total_score > 0 then legacy_total_score else classic_total_score end)', ['legacy_total_score', 'classic_total_score'], ['legacy_total_score', 'classic_total_score'], 10, leaderboards[timeframe].end || null);
 
-            if (!leaderboards.today[ruleset_id].clears) { leaderboards.today[ruleset_id].clears = []; }
-            if (!leaderboards.today[ruleset_id].ss_clears) { leaderboards.today[ruleset_id].ss_clears = []; }
-            if (!leaderboards.today[ruleset_id].score) { leaderboards.today[ruleset_id].score = []; }
+                leaderboards[timeframe][`ruleset_${ruleset_id}`] = { clears: data_clears, ss_clears: data_ss_clears, score: data_score };
 
-            if (!leaderboards.yesterday[ruleset_id].clears) { leaderboards.yesterday[ruleset_id].clears = []; }
-            if (!leaderboards.yesterday[ruleset_id].ss_clears) { leaderboards.yesterday[ruleset_id].ss_clears = []; }
-            if (!leaderboards.yesterday[ruleset_id].score) { leaderboards.yesterday[ruleset_id].score = []; }
+                console.log(`[SYSTEM STATS] Processed today top players for ruleset ${ruleset_id} and timeframe ${timeframe}`);
+            }
+        }
 
-            const data_clears = await queryDayLeaderboard(ruleset_id, today, 'count(*)', ['legacy_total_score', 'classic_total_score']);
-            const data_ss_clears = await queryDayLeaderboard(ruleset_id, today, 'sum(case when grade = \'XH\' or grade = \'X\' then 1 else 0 end)', ['legacy_total_score', 'classic_total_score'], ['grade']);
-            const data_score = await queryDayLeaderboard(ruleset_id, today, 'sum(case when legacy_total_score > 0 then legacy_total_score else classic_total_score end)', ['legacy_total_score', 'classic_total_score'], ['legacy_total_score', 'classic_total_score']);
-
-            const data_clears_yesterday = await queryDayLeaderboard(ruleset_id, yesterday, 'count(*)', ['legacy_total_score', 'classic_total_score']);
-            const data_ss_clears_yesterday = await queryDayLeaderboard(ruleset_id, yesterday, 'sum(case when grade = \'XH\' or grade = \'X\' then 1 else 0 end)', ['legacy_total_score', 'classic_total_score'], ['grade']);
-            const data_score_yesterday = await queryDayLeaderboard(ruleset_id, yesterday, 'sum(case when legacy_total_score > 0 then legacy_total_score else classic_total_score end)', ['legacy_total_score', 'classic_total_score'], ['legacy_total_score', 'classic_total_score']);
-
-            leaderboards.today[ruleset_id].clears = data_clears;
-            leaderboards.today[ruleset_id].ss_clears = data_ss_clears;
-            leaderboards.today[ruleset_id].score = data_score;
-
-            leaderboards.yesterday[ruleset_id].clears = data_clears_yesterday;
-            leaderboards.yesterday[ruleset_id].ss_clears = data_ss_clears_yesterday;
-            leaderboards.yesterday[ruleset_id].score = data_score_yesterday;
+        //remove start/end from leaderboards before saving
+        for (const timeframe of Object.keys(leaderboards)) {
+            delete leaderboards[timeframe].start;
+            delete leaderboards[timeframe].end;
         }
 
         const [stat, created] = await InspectorStat.findOrCreate({
@@ -229,10 +238,10 @@ async function ProcessTodayTopPlayers() {
     }
 }
 
-async function queryDayLeaderboard(ruleset_id, date, select_clear, primary_stats = ['pp'], included_attributes = [], limit = 10) {
-    const start = new Date(date);
+async function queryDayLeaderboard(ruleset_id, date_start, select_clear, primary_stats = ['pp'], included_attributes = [], limit = 10, date_end = null) {
+    const start = new Date(date_start);
     start.setUTCHours(0, 0, 0, 0);
-    const end = new Date(date);
+    const end = new Date(date_end || date_start);
     end.setUTCHours(23, 59, 59, 999);
     const query = `
             WITH normalized_scores AS (
@@ -464,5 +473,5 @@ async function CountScoreData() {
 //if dev
 if (process.env.NODE_ENV === 'development') {
     // UpdateStats();
-    CountScoreData();
+    ProcessTodayTopPlayers();
 }
