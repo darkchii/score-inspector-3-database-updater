@@ -199,7 +199,7 @@ async function ProcessTodayTopPlayers() {
             }
         };
 
-        for (let ruleset_id = 0; ruleset_id <= 3; ruleset_id++) {
+        for (let ruleset_id = 0; ruleset_id <= 4; ruleset_id++) {
             //do above, but use a for loop so we can just easily add more timeframes if needed
             //use the keys of 'leaderboards' ofc
             for (const timeframe of Object.keys(leaderboards)) {
@@ -243,6 +243,7 @@ async function queryDayLeaderboard(ruleset_id, date_start, select_clear, primary
     start.setUTCHours(0, 0, 0, 0);
     const end = new Date(date_end || date_start);
     end.setUTCHours(23, 59, 59, 999);
+    const ruleset_query = ruleset_id < 4 ? `AND ruleset_id = ${ruleset_id}` : '';
     const query = `
             WITH normalized_scores AS (
             SELECT
@@ -251,7 +252,7 @@ async function queryDayLeaderboard(ruleset_id, date_start, select_clear, primary
                 ${included_attributes.map(attr => `${attr}`).join(', ')}${included_attributes.length > 0 ? ',' : ''}
                 ended_at${primary_stats.length > 0 ? `, GREATEST(${primary_stats.map(stat => `NULLIF(${stat}, 0)`).join(', ')}) as primary_stat` : ''}
             FROM scorelive
-            WHERE ruleset_id = :ruleset_id AND ended_at <= :end
+            WHERE 1=1 ${ruleset_query} AND ended_at <= :end
         ),
         best_scores AS (
             SELECT DISTINCT ON (user_id_fk, beatmap_id_fk)
@@ -300,7 +301,7 @@ async function queryDayLeaderboard(ruleset_id, date_start, select_clear, primary
             user_id_fk,
             ${select_clear} as clear
         FROM scorelive
-        WHERE ruleset_id = :ruleset_id
+        WHERE 1=1 ${ruleset_query}
         AND ended_at BETWEEN :start AND :end
         AND user_id_fk IN (${user_ids.join(',')})
         GROUP BY user_id_fk
@@ -386,7 +387,7 @@ async function CountScoreData() {
         //also count amount of grades (XH, X, SH, S, A, B, C, D, F) and score (legacy_total_score/classic_total_score whichever is higher) per timeframe 
         const now = new Date();
 
-        for (const ruleset_id of [0, 1, 2, 3]) {
+        for (const ruleset_id of [0, 1, 2, 3, 4]) {
             let data = {};
             for (const timeframe of scoreDataTimeframes) {
                 //use a single query to get all counts per timeframe
@@ -409,6 +410,7 @@ async function CountScoreData() {
                     timeCondition = ''; //all years
                     timeFormat = 'YYYY';
                 }
+                const ruleset_query = ruleset_id < 4 ? `AND ruleset_id = ${ruleset_id}` : '';
                 const query = `
                 SELECT 
                     TO_TIMESTAMP(ended_at::text, '${timeFormat}') as period,
@@ -423,7 +425,7 @@ async function CountScoreData() {
                     SUM(CASE WHEN grade = 'D' THEN 1 ELSE 0 END) as d_count,
                     SUM(CASE WHEN legacy_total_score > classic_total_score THEN legacy_total_score ELSE classic_total_score END) as total_score_sum
                 FROM scorelive
-                WHERE ruleset_id = :ruleset_id ${timeCondition}
+                WHERE 1=1 ${ruleset_query} ${timeCondition}
                 GROUP BY period
                 ORDER BY period DESC;
             `;
@@ -473,5 +475,5 @@ async function CountScoreData() {
 //if dev
 if (process.env.NODE_ENV === 'development') {
     // UpdateStats();
-    ProcessTodayTopPlayers();
+    // ProcessTodayTopPlayers();
 }
