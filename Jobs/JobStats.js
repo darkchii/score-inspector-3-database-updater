@@ -1,5 +1,5 @@
 const { default: Sequelize, Op } = require("@sequelize/core");
-const { AltBeatmapLive, InspectorStat, AltScoreLive, AltUserLive, InspectorTeam, Databases } = require("../db");
+const { AltBeatmapLive, InspectorStat, AltScoreLive, AltUserLive, InspectorTeam, Databases, InspectorPlayerReputation } = require("../db");
 require('dotenv').config();
 
 const cacher = {
@@ -20,6 +20,7 @@ async function UpdateCounts() {
     await CountScores();
     await CountUsers();
     await CountTeams();
+    await CountReputation();
 
     await ProcessTodayTopPlayers();
     await ProcessActiveUsers();
@@ -166,6 +167,29 @@ async function CountTeams() {
         }
     } catch (e) {
         console.log(`[SYSTEM STATS] Failed to update team counts:`);
+        console.log(e);
+    }
+}
+
+async function CountReputation() {
+    try {
+        const count = await InspectorPlayerReputation.count();
+        //create/update InspectorStat 'reputation_counts'
+        const [stat, created] = await InspectorStat.findOrCreate({
+            where: { metric: 'reputation_counts' },
+            defaults: {
+                data: JSON.stringify({ total: count }),
+                last_updated: new Date()
+            }
+        });
+
+        if (!created) {
+            stat.data = JSON.stringify({ total: count });
+            stat.last_updated = new Date();
+            await stat.save();
+        }
+    } catch (e) {
+        console.log(`[SYSTEM STATS] Failed to update reputation counts:`);
         console.log(e);
     }
 }
@@ -476,4 +500,5 @@ async function CountScoreData() {
 if (process.env.NODE_ENV === 'development') {
     // UpdateStats();
     // ProcessTodayTopPlayers();
+    CountReputation();
 }

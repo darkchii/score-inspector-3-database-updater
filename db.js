@@ -10,6 +10,7 @@ const AltBeatmapLiveModel = require("./Models/AltBeatmapLiveModel");
 const { InspectorStatModel } = require("./Models/InspectorStatModel");
 const AltScoreLiveModel = require("./Models/AltScoreLiveModel");
 const AltUserLiveModel = require("./Models/AltUserLiveModel");
+const InspectorPlayerReputationModel = require("./Models/InspectorPlayerReputationModel");
 require('dotenv').config();
 
 let databases = {
@@ -84,6 +85,8 @@ const AltBeatmapLive = AltBeatmapLiveModel(databases.osuAlt);
 const AltScoreLive = AltScoreLiveModel(databases.osuAlt);
 const AltUserLive = AltUserLiveModel(databases.osuAlt);
 
+const InspectorPlayerReputation = InspectorPlayerReputationModel(databases.inspector);
+
 //InspectorOsuUser has team_id, InspectorTeam has id
 // InspectorOsuUser.hasOne(InspectorTeam, { as: 'team', foreignKey: 'id' });
 
@@ -116,6 +119,7 @@ module.exports.InspectorHistoricalScoreRankTaiko = InspectorHistoricalScoreRankT
 module.exports.InspectorHistoricalScoreRankMania = InspectorHistoricalScoreRankMania;
 module.exports.InspectorHistoricalScoreRankFruits = InspectorHistoricalScoreRankFruits;
 module.exports.InspectorStat = InspectorStat;
+module.exports.InspectorPlayerReputation = InspectorPlayerReputation;
 
 module.exports.GetHistoricalScoreRankModel = (mode) => {
     switch (mode) {
