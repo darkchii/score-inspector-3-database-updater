@@ -5,6 +5,7 @@ const schedule = require('node-schedule');
 // const performanceDistributionCacher = require("./Jobs/JobPerformanceDistribution.js");
 const statsCacher = require("./Jobs/JobStats.js");
 const scoreRankCacher = require("./Jobs/JobScoreRank.js");
+const beatmapCopyCacher = require("./Jobs/JobBeatmapCopy.js");
 // const populationStatsCacher = require("./Jobs/JobPopulation.js");
 // const systemStatsCacher = require("./Jobs/JobSystemStats.js");
 // const monthlyRankingsCacher = require("./Jobs/JobMonthlyRanking.js");
@@ -28,6 +29,7 @@ const Cachers = [
     { cacher: scoreRankCacher, interval: '1 0 * * *', data: 'taiko' },
     { cacher: scoreRankCacher, interval: '1 0 * * *', data: 'fruits' },
     { cacher: scoreRankCacher, interval: '1 0 * * *', data: 'mania' },
+    { cacher: beatmapCopyCacher, interval: '0 */1 * * *', data: [], onStart: true }, //every 1 hour
 ]
 
 const jobQueue = [];

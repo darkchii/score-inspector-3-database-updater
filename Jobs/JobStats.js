@@ -27,7 +27,7 @@ async function UpdateCounts() {
     await CountScoreData();
 }
 
-async function CountBeatmaps() {
+async function CountBeatmaps(dry = false) {
     try {
         //count beatmaps
         //(all, and by mode)
@@ -48,18 +48,23 @@ async function CountBeatmaps() {
         );
         counts['total'] = total;
         //create/update InspectorStat 'beatmap_counts'
-        const [stat, created] = await InspectorStat.findOrCreate({
-            where: { metric: 'beatmap_counts' },
-            defaults: {
-                data: JSON.stringify(counts),
-                last_updated: new Date()
-            }
-        });
+        if (!dry) {
+            const [stat, created] = await InspectorStat.findOrCreate({
+                where: { metric: 'beatmap_counts' },
+                defaults: {
+                    data: JSON.stringify(counts),
+                    last_updated: new Date()
+                }
+            });
 
-        if (!created) {
-            stat.data = JSON.stringify(counts);
-            stat.last_updated = new Date();
-            await stat.save();
+            if (!created) {
+                stat.data = JSON.stringify(counts);
+                stat.last_updated = new Date();
+                await stat.save();
+            }
+        } else {
+            console.log(`[SYSTEM STATS] Beatmap counts (dry run):`);
+            console.log(counts);
         }
     } catch (e) {
         console.log(`[SYSTEM STATS] Failed to update counts:`);
@@ -213,13 +218,13 @@ async function ProcessTodayTopPlayers() {
             yesterday: {
                 start: yesterday
             },
-            year: { 
-                start: thisYear, 
-                end: new Date() 
+            year: {
+                start: thisYear,
+                end: new Date()
             },
-            last_year: { 
-                start: lastYear, 
-                end: lastYearEnd 
+            last_year: {
+                start: lastYear,
+                end: lastYearEnd
             }
         };
 
@@ -500,5 +505,5 @@ async function CountScoreData() {
 if (process.env.NODE_ENV === 'development') {
     // UpdateStats();
     // ProcessTodayTopPlayers();
-    CountReputation();
+    // CountReputation();
 }
