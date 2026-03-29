@@ -89,12 +89,6 @@ const AltUserLive = AltUserLiveModel(databases.osuAlt);
 const InspectorBeatmapLive = AltBeatmapLiveModel(databases.inspector, 'beatmaps');
 const InspectorPlayerReputation = InspectorPlayerReputationModel(databases.inspector);
 
-(async () => {
-    console.log('Testing database connection...');
-    let c_alt_bm_count = await AltBeatmapLive.count();
-    let c_insp_bm_count = await InspectorBeatmapLive.count();
-    console.log(`Successfully connected to database, alt beatmap count: ${c_alt_bm_count}, inspector beatmap count: ${c_insp_bm_count}`);
-})();
 //InspectorOsuUser has team_id, InspectorTeam has id
 // InspectorOsuUser.hasOne(InspectorTeam, { as: 'team', foreignKey: 'id' });
 

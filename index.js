@@ -29,7 +29,7 @@ const Cachers = [
     { cacher: scoreRankCacher, interval: '1 0 * * *', data: 'taiko' },
     { cacher: scoreRankCacher, interval: '1 0 * * *', data: 'fruits' },
     { cacher: scoreRankCacher, interval: '1 0 * * *', data: 'mania' },
-    { cacher: beatmapCopyCacher, interval: '0 */1 * * *', data: [], onStart: true }, //every 1 hour
+    // { cacher: beatmapCopyCacher, interval: '0 */1 * * *', data: [], onStart: true }, //every 1 hour
 ]
 
 const jobQueue = [];
