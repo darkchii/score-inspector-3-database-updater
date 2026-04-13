@@ -223,7 +223,8 @@ async function ProcessTodayTopPlayers() {
                 start: yesterday
             },
             this_month: {
-                start: thisMonth
+                start: thisMonth,
+                end: new Date()
             },
             last_month: {
                 start: lastMonth,
