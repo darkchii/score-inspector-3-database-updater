@@ -203,10 +203,14 @@ async function ProcessTodayTopPlayers() {
     try {
         const today = new Date();
         const yesterday = new Date();
+        const thisMonth = new Date();
+        const lastMonth = new Date();
         const thisYear = new Date();
         const lastYear = new Date();
         const lastYearEnd = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
+        thisMonth.setDate(1); thisMonth.setHours(0, 0, 0, 0);
+        lastMonth.setMonth(lastMonth.getMonth() - 1); lastMonth.setDate(1); lastMonth.setHours(0, 0, 0, 0);
         thisYear.setMonth(0); thisYear.setDate(1); thisYear.setHours(0, 0, 0, 0);
         lastYear.setFullYear(lastYear.getFullYear() - 1); lastYear.setMonth(0); lastYear.setDate(1); lastYear.setHours(0, 0, 0, 0);
         lastYearEnd.setFullYear(lastYearEnd.getFullYear() - 1); lastYearEnd.setMonth(11); lastYearEnd.setDate(31); lastYearEnd.setHours(23, 59, 59, 999);
@@ -217,6 +221,13 @@ async function ProcessTodayTopPlayers() {
             },
             yesterday: {
                 start: yesterday
+            },
+            this_month: {
+                start: thisMonth
+            },
+            last_month: {
+                start: lastMonth,
+                end: thisMonth
             },
             year: {
                 start: thisYear,

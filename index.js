@@ -5,7 +5,6 @@ const schedule = require('node-schedule');
 // const performanceDistributionCacher = require("./Jobs/JobPerformanceDistribution.js");
 const statsCacher = require("./Jobs/JobStats.js");
 const scoreRankCacher = require("./Jobs/JobScoreRank.js");
-const beatmapCopyCacher = require("./Jobs/JobBeatmapCopy.js");
 // const populationStatsCacher = require("./Jobs/JobPopulation.js");
 // const systemStatsCacher = require("./Jobs/JobSystemStats.js");
 // const monthlyRankingsCacher = require("./Jobs/JobMonthlyRanking.js");
